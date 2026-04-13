@@ -1,0 +1,38 @@
+# Dependencies
+node_modules
+
+# Build output
+dist
+
+# Environment files
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+*~
+
+# Capacitor native platforms
+ios
+android
+
+# Editor backup files
+*.bak
+*.orig
+
+.claude
+FRONTEND.md
