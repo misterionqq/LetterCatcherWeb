@@ -5,6 +5,8 @@ import router from '@/router'
 
 export const useAuthStore = defineStore('auth', () => {
   const token = ref(localStorage.getItem('access_token'))
+  const justRegistered = ref(false)
+  const registeredEmail = ref('')
 
   const isAuthenticated = computed(() => !!token.value)
 
@@ -21,18 +23,41 @@ export const useAuthStore = defineStore('auth', () => {
   async function register(email, password) {
     const data = await authApi.register(email, password)
     setToken(data.access_token)
+    justRegistered.value = true
+    registeredEmail.value = email
   }
 
-  async function telegramLogin(telegramId) {
-    const data = await authApi.telegramLogin(telegramId)
+  async function telegramLogin(widgetData) {
+    const data = await authApi.telegramLogin(widgetData)
     setToken(data.access_token)
+  }
+
+  async function forgotPassword(email) {
+    return await authApi.forgotPassword(email)
+  }
+
+  async function resetPassword(resetToken, newPassword) {
+    return await authApi.resetPassword(resetToken, newPassword)
   }
 
   function logout() {
     token.value = null
+    justRegistered.value = false
+    registeredEmail.value = ''
     localStorage.removeItem('access_token')
     router.push('/login')
   }
 
-  return { token, isAuthenticated, login, register, telegramLogin, logout }
+  return {
+    token,
+    isAuthenticated,
+    justRegistered,
+    registeredEmail,
+    login,
+    register,
+    telegramLogin,
+    forgotPassword,
+    resetPassword,
+    logout,
+  }
 })

@@ -22,6 +22,9 @@ api.interceptors.response.use(
       localStorage.removeItem('access_token')
       window.location.replace('/login')
     }
+    if (error.response?.status === 429) {
+      error.rateLimited = true
+    }
     return Promise.reject(error)
   }
 )

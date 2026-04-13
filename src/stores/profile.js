@@ -22,7 +22,8 @@ export const useProfileStore = defineStore('profile', () => {
   }
 
   async function updateEmail(email) {
-    profile.value = await profileApi.updateEmail(email)
+    const result = await profileApi.updateEmail(email)
+    return result
   }
 
   async function setSensitivity(level) {

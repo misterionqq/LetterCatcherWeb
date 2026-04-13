@@ -61,12 +61,16 @@ async function handleUpdateEmail() {
   emailLoading.value = true
   emailError.value = ''
   try {
-    await profileStore.updateEmail(newEmail.value)
+    const result = await profileStore.updateEmail(newEmail.value)
     showEmailModal.value = false
     newEmail.value = ''
-    addToast('Email обновлён', 'success')
+    addToast(result.message || 'Письмо с подтверждением отправлено на новый адрес', 'success')
   } catch (e) {
-    if (e.response?.status === 422) {
+    if (e.rateLimited) {
+      emailError.value = 'Слишком много попыток. Подождите минуту.'
+    } else if (e.response?.status === 409) {
+      emailError.value = 'Этот email уже используется'
+    } else if (e.response?.status === 422) {
       emailError.value = 'Некорректный email'
     } else {
       addToast('Ошибка при обновлении', 'error')
@@ -168,6 +172,18 @@ async function handleRemoveKeyword(word) {
           >
             Изменить
           </button>
+        </div>
+        <div
+          v-if="profileStore.profile.email_verified === false"
+          class="mt-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2"
+        >
+          <svg class="mt-0.5 h-4 w-4 shrink-0 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <p class="text-xs text-amber-800">
+            Email не подтверждён. Проверьте почту и перейдите по ссылке.
+            Уведомления о письмах не будут приходить до подтверждения.
+          </p>
         </div>
       </section>
 

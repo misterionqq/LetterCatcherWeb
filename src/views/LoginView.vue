@@ -22,21 +22,27 @@ const serverSaved = ref(false)
 const activeTab = ref('login')
 const email = ref('')
 const password = ref('')
-const telegramId = ref('')
-const showTelegram = ref(false)
 const loading = ref(false)
 const errors = ref({})
+
+// Post-registration state
+const showVerificationBanner = ref(false)
+const verificationEmail = ref('')
 
 onMounted(() => {
   const current = getServerUrl()
   if (current) {
-    // Show without /api/v1 suffix for cleaner display
     serverInput.value = current.replace(/\/api\/v1$/, '')
     serverSaved.value = true
   }
-  // On mobile, if not configured — force server config first
   if (isNative && !isServerConfigured()) {
     showServerConfig.value = true
+  }
+  // If user just registered and came back, show banner
+  if (authStore.justRegistered) {
+    showVerificationBanner.value = true
+    verificationEmail.value = authStore.registeredEmail
+    authStore.justRegistered = false
   }
 })
 
@@ -85,50 +91,32 @@ async function handleSubmit() {
   try {
     if (activeTab.value === 'login') {
       await authStore.login(email.value, password.value)
+      router.push('/')
     } else {
       await authStore.register(email.value, password.value)
+      showVerificationBanner.value = true
+      verificationEmail.value = email.value
+      router.push('/')
     }
-    router.push('/')
   } catch (e) {
-    const status = e.response?.status
-    if (status === 401) {
-      errors.value.general = 'Неверный email или пароль'
-    } else if (status === 409) {
-      errors.value.email = 'Email уже зарегистрирован'
-    } else if (status === 422) {
-      const detail = e.response?.data?.detail
-      if (Array.isArray(detail)) {
-        errors.value.general = detail.map((d) => d.msg).join(', ')
+    if (e.rateLimited) {
+      errors.value.general = 'Слишком много попыток. Подождите минуту.'
+    } else {
+      const status = e.response?.status
+      if (status === 401) {
+        errors.value.general = 'Неверный email или пароль'
+      } else if (status === 409) {
+        errors.value.email = 'Email уже зарегистрирован'
+      } else if (status === 422) {
+        const detail = e.response?.data?.detail
+        if (Array.isArray(detail)) {
+          errors.value.general = detail.map((d) => d.msg).join(', ')
+        } else {
+          errors.value.general = 'Ошибка валидации'
+        }
       } else {
-        errors.value.general = 'Ошибка валидации'
+        addToast('Сервер недоступен, попробуйте позже', 'error')
       }
-    } else {
-      addToast('Сервер недоступен, попробуйте позже', 'error')
-    }
-  } finally {
-    loading.value = false
-  }
-}
-
-async function handleTelegramLogin() {
-  if (!isServerConfigured()) {
-    showServerConfig.value = true
-    return
-  }
-  if (!telegramId.value.trim()) {
-    errors.value.telegram = 'Введите Telegram ID'
-    return
-  }
-  loading.value = true
-  errors.value = {}
-  try {
-    await authStore.telegramLogin(Number(telegramId.value))
-    router.push('/')
-  } catch (e) {
-    if (e.response?.status === 404) {
-      errors.value.telegram = 'Пользователь не найден, зарегистрируйтесь через бот'
-    } else {
-      addToast('Сервер недоступен, попробуйте позже', 'error')
     }
   } finally {
     loading.value = false
@@ -140,6 +128,25 @@ async function handleTelegramLogin() {
   <div class="flex min-h-screen items-center justify-center bg-gray-50 px-4">
     <div class="w-full max-w-md">
       <h1 class="mb-8 text-center text-2xl font-bold text-gray-900">LetterCatcher</h1>
+
+      <!-- Email verification banner (after registration) -->
+      <div
+        v-if="showVerificationBanner"
+        class="mb-4 rounded-2xl border border-blue-200 bg-blue-50 p-4"
+      >
+        <div class="flex gap-3">
+          <svg class="h-5 w-5 shrink-0 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
+          <div>
+            <p class="text-sm font-medium text-blue-900">Подтвердите email</p>
+            <p class="mt-1 text-xs text-blue-700">
+              Мы отправили письмо на <strong>{{ verificationEmail }}</strong>.
+              Перейдите по ссылке для подтверждения.
+            </p>
+          </div>
+        </div>
+      </div>
 
       <!-- Server config block (shown first on mobile if not configured) -->
       <div v-if="showServerConfig" class="mb-4 rounded-2xl bg-white p-6 shadow-sm">
@@ -223,27 +230,14 @@ async function handleTelegramLogin() {
           </BaseButton>
         </form>
 
-        <!-- Telegram login -->
-        <div class="mt-6 border-t border-gray-100 pt-4">
-          <button
-            class="w-full text-center text-sm text-primary hover:underline"
-            @click="showTelegram = !showTelegram"
+        <!-- Forgot password -->
+        <div v-if="activeTab === 'login'" class="mt-3 text-center">
+          <router-link
+            to="/forgot-password"
+            class="text-sm text-primary hover:underline"
           >
-            Войти через Telegram-бот
-          </button>
-
-          <div v-if="showTelegram" class="mt-3 space-y-3">
-            <input
-              v-model="telegramId"
-              type="text"
-              class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary"
-              placeholder="Ваш Telegram ID"
-            />
-            <p v-if="errors.telegram" class="text-xs text-danger">{{ errors.telegram }}</p>
-            <BaseButton :loading="loading" class="w-full" @click="handleTelegramLogin">
-              Войти
-            </BaseButton>
-          </div>
+            Забыли пароль?
+          </router-link>
         </div>
       </div>
     </div>
