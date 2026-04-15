@@ -40,6 +40,10 @@ export const useAuthStore = defineStore('auth', () => {
     return await authApi.resetPassword(resetToken, newPassword)
   }
 
+  async function resendVerification() {
+    return await authApi.resendVerification()
+  }
+
   function logout() {
     token.value = null
     justRegistered.value = false
@@ -58,6 +62,7 @@ export const useAuthStore = defineStore('auth', () => {
     telegramLogin,
     forgotPassword,
     resetPassword,
+    resendVerification,
     logout,
   }
 })

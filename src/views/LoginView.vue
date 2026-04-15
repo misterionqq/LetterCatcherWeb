@@ -1,10 +1,11 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { Capacitor } from '@capacitor/core'
 import { useAuthStore } from '@/stores/auth.js'
 import { useToast } from '@/composables/useToast.js'
 import { getServerUrl, setServerUrl, isServerConfigured } from '@/utils/serverUrl.js'
+import { getServerInfo } from '@/api/settings.js'
 import BaseButton from '@/components/BaseButton.vue'
 
 const router = useRouter()
@@ -29,6 +30,11 @@ const errors = ref({})
 const showVerificationBanner = ref(false)
 const verificationEmail = ref('')
 
+// Telegram Login Widget
+const botUsername = ref('')
+const telegramLoading = ref(false)
+const telegramContainerRef = ref(null)
+
 onMounted(() => {
   const current = getServerUrl()
   if (current) {
@@ -38,13 +44,85 @@ onMounted(() => {
   if (isNative && !isServerConfigured()) {
     showServerConfig.value = true
   }
-  // If user just registered and came back, show banner
   if (authStore.justRegistered) {
     showVerificationBanner.value = true
     verificationEmail.value = authStore.registeredEmail
     authStore.justRegistered = false
   }
+  if (isServerConfigured()) {
+    fetchBotUsername()
+  }
 })
+
+onUnmounted(() => {
+  delete window.__onTelegramAuth
+})
+
+// Re-fetch bot_username when server becomes configured
+watch(serverSaved, (val) => {
+  if (val && isServerConfigured()) {
+    fetchBotUsername()
+  }
+})
+
+async function fetchBotUsername() {
+  try {
+    const info = await getServerInfo()
+    if (info.bot_username) {
+      botUsername.value = info.bot_username
+      await nextTick()
+      loadTelegramWidget()
+    }
+  } catch {
+    // Server info unavailable — Telegram login won't be shown
+  }
+}
+
+function loadTelegramWidget() {
+  if (!botUsername.value || !telegramContainerRef.value) return
+
+  // Clear previous widget if any
+  telegramContainerRef.value.innerHTML = ''
+
+  // Set up global callback
+  window.__onTelegramAuth = handleTelegramAuth
+
+  const script = document.createElement('script')
+  script.src = 'https://telegram.org/js/telegram-widget.js?22'
+  script.setAttribute('data-telegram-login', botUsername.value)
+  script.setAttribute('data-size', 'large')
+  script.setAttribute('data-radius', '8')
+  script.setAttribute('data-onauth', '__onTelegramAuth(user)')
+  script.setAttribute('data-request-access', 'write')
+  script.async = true
+
+  telegramContainerRef.value.appendChild(script)
+}
+
+async function handleTelegramAuth(user) {
+  if (!isServerConfigured()) {
+    showServerConfig.value = true
+    return
+  }
+  telegramLoading.value = true
+  errors.value = {}
+  try {
+    await authStore.telegramLogin(user)
+    router.push('/')
+  } catch (e) {
+    if (e.rateLimited) {
+      errors.value.general = 'Слишком много попыток. Подождите минуту.'
+    } else if (e.response?.status === 401) {
+      errors.value.general = 'Ошибка авторизации через Telegram'
+    } else if (e.response?.status === 404) {
+      errors.value.general = 'Пользователь не найден, зарегистрируйтесь через бот'
+    } else {
+      addToast('Сервер недоступен, попробуйте позже', 'error')
+    }
+  } finally {
+    telegramLoading.value = false
+  }
+}
 
 function saveServer() {
   const url = serverInput.value.trim()
@@ -238,6 +316,18 @@ async function handleSubmit() {
           >
             Забыли пароль?
           </router-link>
+        </div>
+
+        <!-- Telegram login -->
+        <div v-if="botUsername" class="mt-6 border-t border-gray-100 pt-4">
+          <p class="mb-3 text-center text-xs text-gray-400">или</p>
+          <div ref="telegramContainerRef" class="flex justify-center" />
+          <div v-if="telegramLoading" class="mt-2 flex justify-center">
+            <svg class="h-5 w-5 animate-spin text-primary" viewBox="0 0 24 24" fill="none">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+          </div>
         </div>
       </div>
     </div>

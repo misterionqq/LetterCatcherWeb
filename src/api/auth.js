@@ -20,3 +20,6 @@ export const verifyEmail = (token) =>
 
 export const verifyEmailChange = (token) =>
   api.get('/auth/verify-email-change', { params: { token } }).then((r) => r.data)
+
+export const resendVerification = () =>
+  api.post('/auth/resend-verification').then((r) => r.data)

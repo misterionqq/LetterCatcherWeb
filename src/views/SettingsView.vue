@@ -25,6 +25,9 @@ const stopWordLoading = ref(false)
 const keywordError = ref('')
 const stopWordError = ref('')
 
+// Resend verification
+const resendLoading = ref(false)
+
 // DND
 const dndLoading = ref(false)
 const showPendingModal = ref(false)
@@ -52,6 +55,25 @@ onMounted(() => {
     profileStore.fetchProfile().catch(() => {})
   }
 })
+
+async function handleResendVerification() {
+  resendLoading.value = true
+  try {
+    const result = await authStore.resendVerification()
+    addToast(result.message || 'Письмо отправлено', 'success')
+  } catch (e) {
+    if (e.rateLimited) {
+      addToast('Слишком много попыток. Подождите минуту.', 'error')
+    } else if (e.response?.status === 400) {
+      addToast('Email уже подтверждён', 'info')
+      await profileStore.fetchProfile()
+    } else {
+      addToast('Ошибка отправки', 'error')
+    }
+  } finally {
+    resendLoading.value = false
+  }
+}
 
 async function handleUpdateEmail() {
   if (!newEmail.value.trim()) {
@@ -180,10 +202,19 @@ async function handleRemoveKeyword(word) {
           <svg class="mt-0.5 h-4 w-4 shrink-0 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
-          <p class="text-xs text-amber-800">
-            Email не подтверждён. Проверьте почту и перейдите по ссылке.
-            Уведомления о письмах не будут приходить до подтверждения.
-          </p>
+          <div>
+            <p class="text-xs text-amber-800">
+              Email не подтверждён. Проверьте почту и перейдите по ссылке.
+              Уведомления о письмах не будут приходить до подтверждения.
+            </p>
+            <button
+              class="mt-1.5 text-xs font-medium text-amber-700 underline hover:text-amber-900 disabled:opacity-50"
+              :disabled="resendLoading"
+              @click="handleResendVerification"
+            >
+              {{ resendLoading ? 'Отправляем...' : 'Отправить повторно' }}
+            </button>
+          </div>
         </div>
       </section>
 
