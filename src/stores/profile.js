@@ -50,6 +50,10 @@ export const useProfileStore = defineStore('profile', () => {
     profile.value = await keywordsApi.removeKeyword(word)
   }
 
+  async function linkTelegram() {
+    return await profileApi.linkTelegram()
+  }
+
   return {
     profile,
     loading,
@@ -62,5 +66,6 @@ export const useProfileStore = defineStore('profile', () => {
     addKeyword,
     addStopWord,
     removeKeyword,
+    linkTelegram,
   }
 })

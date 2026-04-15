@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useProfileStore } from '@/stores/profile.js'
 import { useAuthStore } from '@/stores/auth.js'
 import { useToast } from '@/composables/useToast.js'
+import { getServerInfo } from '@/api/settings.js'
 import BaseButton from '@/components/BaseButton.vue'
 import BaseModal from '@/components/BaseModal.vue'
 import KeywordChip from '@/components/KeywordChip.vue'
@@ -33,6 +34,11 @@ const dndLoading = ref(false)
 const showPendingModal = ref(false)
 const pendingNotifications = ref([])
 
+// Telegram
+const telegramLinkLoading = ref(false)
+const botUsername = ref('')
+const showTelegramHint = ref(false)
+
 // Sensitivity
 const sensitivityLoading = ref(false)
 
@@ -54,6 +60,11 @@ onMounted(() => {
   if (!profileStore.profile && !profileStore.loading) {
     profileStore.fetchProfile().catch(() => {})
   }
+  getServerInfo()
+    .then((info) => {
+      if (info.bot_username) botUsername.value = info.bot_username
+    })
+    .catch(() => {})
 })
 
 async function handleResendVerification() {
@@ -73,6 +84,31 @@ async function handleResendVerification() {
   } finally {
     resendLoading.value = false
   }
+}
+
+async function handleLinkTelegram() {
+  telegramLinkLoading.value = true
+  try {
+    const result = await profileStore.linkTelegram()
+    window.open(result.link, '_blank')
+    showTelegramHint.value = true
+  } catch (e) {
+    if (e.response?.status === 409) {
+      addToast('Telegram уже привязан', 'info')
+      await profileStore.fetchProfile()
+    } else if (e.response?.status === 503) {
+      addToast('Telegram-бот не настроен на сервере', 'error')
+    } else {
+      addToast('Ошибка при привязке', 'error')
+    }
+  } finally {
+    telegramLinkLoading.value = false
+  }
+}
+
+function handleRefreshTelegramStatus() {
+  profileStore.fetchProfile().catch(() => {})
+  showTelegramHint.value = false
 }
 
 async function handleUpdateEmail() {
@@ -213,6 +249,43 @@ async function handleRemoveKeyword(word) {
               @click="handleResendVerification"
             >
               {{ resendLoading ? 'Отправляем...' : 'Отправить повторно' }}
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Telegram -->
+      <section class="rounded-xl bg-white p-4 shadow-sm">
+        <h2 class="mb-3 text-sm font-semibold text-gray-500 uppercase tracking-wide">Telegram</h2>
+        <div v-if="profileStore.profile.telegram_id" class="flex items-center gap-2 text-sm text-gray-700">
+          <svg class="h-4 w-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+          Привязан
+        </div>
+        <div v-else>
+          <button
+            class="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 disabled:opacity-50"
+            :disabled="telegramLinkLoading"
+            @click="handleLinkTelegram"
+          >
+            <svg class="h-5 w-5 text-[#2AABEE]" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+            </svg>
+            {{ telegramLinkLoading ? 'Загрузка...' : 'Привязать Telegram' }}
+          </button>
+          <div
+            v-if="showTelegramHint"
+            class="mt-3 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2.5"
+          >
+            <p class="text-xs text-blue-700">
+              Перейдите в Telegram и нажмите Start. Ссылка действительна 10 минут.
+            </p>
+            <button
+              class="mt-1.5 text-xs font-medium text-blue-600 underline hover:text-blue-800"
+              @click="handleRefreshTelegramStatus"
+            >
+              Я привязал, обновить статус
             </button>
           </div>
         </div>

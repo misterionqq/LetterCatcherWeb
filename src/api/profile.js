@@ -17,3 +17,6 @@ export const getPendingDnd = () =>
 
 export const registerDeviceToken = (token) =>
   api.post('/profile/device-token', { token, platform: 'android' }).then((r) => r.data)
+
+export const linkTelegram = () =>
+  api.post('/profile/link-telegram').then((r) => r.data)

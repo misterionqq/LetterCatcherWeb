@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Capacitor } from '@capacitor/core'
 import { useAuthStore } from '@/stores/auth.js'
@@ -7,6 +7,7 @@ import { useToast } from '@/composables/useToast.js'
 import { getServerUrl, setServerUrl, isServerConfigured } from '@/utils/serverUrl.js'
 import { getServerInfo } from '@/api/settings.js'
 import BaseButton from '@/components/BaseButton.vue'
+import BaseModal from '@/components/BaseModal.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -30,10 +31,9 @@ const errors = ref({})
 const showVerificationBanner = ref(false)
 const verificationEmail = ref('')
 
-// Telegram Login Widget
+// Telegram guide
 const botUsername = ref('')
-const telegramLoading = ref(false)
-const telegramContainerRef = ref(null)
+const showTelegramGuide = ref(false)
 
 onMounted(() => {
   const current = getServerUrl()
@@ -54,73 +54,14 @@ onMounted(() => {
   }
 })
 
-onUnmounted(() => {
-  delete window.__onTelegramAuth
-})
-
-// Re-fetch bot_username when server becomes configured
-watch(serverSaved, (val) => {
-  if (val && isServerConfigured()) {
-    fetchBotUsername()
-  }
-})
-
 async function fetchBotUsername() {
   try {
     const info = await getServerInfo()
     if (info.bot_username) {
       botUsername.value = info.bot_username
-      await nextTick()
-      loadTelegramWidget()
     }
   } catch {
-    // Server info unavailable — Telegram login won't be shown
-  }
-}
-
-function loadTelegramWidget() {
-  if (!botUsername.value || !telegramContainerRef.value) return
-
-  // Clear previous widget if any
-  telegramContainerRef.value.innerHTML = ''
-
-  // Set up global callback
-  window.__onTelegramAuth = handleTelegramAuth
-
-  const script = document.createElement('script')
-  script.src = 'https://telegram.org/js/telegram-widget.js?22'
-  script.setAttribute('data-telegram-login', botUsername.value)
-  script.setAttribute('data-size', 'large')
-  script.setAttribute('data-radius', '8')
-  script.setAttribute('data-onauth', '__onTelegramAuth(user)')
-  script.setAttribute('data-request-access', 'write')
-  script.async = true
-
-  telegramContainerRef.value.appendChild(script)
-}
-
-async function handleTelegramAuth(user) {
-  if (!isServerConfigured()) {
-    showServerConfig.value = true
-    return
-  }
-  telegramLoading.value = true
-  errors.value = {}
-  try {
-    await authStore.telegramLogin(user)
-    router.push('/')
-  } catch (e) {
-    if (e.rateLimited) {
-      errors.value.general = 'Слишком много попыток. Подождите минуту.'
-    } else if (e.response?.status === 401) {
-      errors.value.general = 'Ошибка авторизации через Telegram'
-    } else if (e.response?.status === 404) {
-      errors.value.general = 'Пользователь не найден, зарегистрируйтесь через бот'
-    } else {
-      addToast('Сервер недоступен, попробуйте позже', 'error')
-    }
-  } finally {
-    telegramLoading.value = false
+    // Server info unavailable
   }
 }
 
@@ -141,6 +82,7 @@ function saveServer() {
   serverSaved.value = true
   showServerConfig.value = false
   addToast('Сервер сохранён', 'success')
+  fetchBotUsername()
 }
 
 function validate() {
@@ -184,7 +126,7 @@ async function handleSubmit() {
       if (status === 401) {
         errors.value.general = 'Неверный email или пароль'
       } else if (status === 409) {
-        errors.value.email = 'Email уже зарегистрирован'
+        errors.value.email = 'Этот email уже зарегистрирован. Если вы регистрировались через Telegram-бота, нажмите «Войти через Telegram» на странице входа.'
       } else if (status === 422) {
         const detail = e.response?.data?.detail
         if (Array.isArray(detail)) {
@@ -318,18 +260,49 @@ async function handleSubmit() {
           </router-link>
         </div>
 
-        <!-- Telegram login -->
-        <div v-if="botUsername" class="mt-6 border-t border-gray-100 pt-4">
+        <!-- Telegram guide link -->
+        <div class="mt-6 border-t border-gray-100 pt-4">
           <p class="mb-3 text-center text-xs text-gray-400">или</p>
-          <div ref="telegramContainerRef" class="flex justify-center" />
-          <div v-if="telegramLoading" class="mt-2 flex justify-center">
-            <svg class="h-5 w-5 animate-spin text-primary" viewBox="0 0 24 24" fill="none">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          <button
+            class="flex w-full items-center justify-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100"
+            @click="showTelegramGuide = true"
+          >
+            <svg class="h-5 w-5 text-[#2AABEE]" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
             </svg>
-          </div>
+            Войти через Telegram
+          </button>
         </div>
       </div>
     </div>
+
+    <!-- Telegram guide modal -->
+    <BaseModal v-if="showTelegramGuide" title="Как войти через Telegram" @close="showTelegramGuide = false">
+      <div class="space-y-3">
+        <ol class="list-decimal space-y-2 pl-5 text-sm text-gray-700">
+          <li>
+            Откройте бота
+            <a
+              v-if="botUsername"
+              :href="`https://t.me/${botUsername}`"
+              target="_blank"
+              class="font-medium text-primary hover:underline"
+            >@{{ botUsername }}</a>
+            <span v-else class="font-medium">в Telegram</span>
+          </li>
+          <li>Отправьте команду <code class="rounded bg-gray-100 px-1.5 py-0.5 text-xs">/link</code> и введите ваш email</li>
+          <li>Введите код из письма — аккаунты объединятся</li>
+          <li>Вернитесь сюда и нажмите «Забыли пароль?»</li>
+          <li>На вашу почту придёт ссылка для создания пароля</li>
+          <li>После установки пароля вы сможете входить на сайт</li>
+        </ol>
+        <div class="rounded-lg bg-blue-50 px-3 py-2.5 text-xs text-blue-700">
+          После этого уведомления будут приходить и в Telegram, и на сайт.
+        </div>
+        <BaseButton class="w-full" @click="showTelegramGuide = false">
+          Понятно
+        </BaseButton>
+      </div>
+    </BaseModal>
   </div>
 </template>
