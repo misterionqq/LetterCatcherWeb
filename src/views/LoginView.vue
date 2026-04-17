@@ -35,6 +35,10 @@ const verificationEmail = ref('')
 const botUsername = ref('')
 const showTelegramGuide = ref(false)
 
+// Privacy consent
+const consentAccepted = ref(false)
+const showPrivacyPolicy = ref(false)
+
 onMounted(() => {
   const current = getServerUrl()
   if (current) {
@@ -245,7 +249,25 @@ async function handleSubmit() {
 
           <p v-if="errors.general" class="text-sm text-danger">{{ errors.general }}</p>
 
-          <BaseButton type="submit" :loading="loading" class="w-full">
+          <!-- Privacy consent checkbox -->
+          <div class="flex items-start gap-2">
+            <input
+              id="consent"
+              v-model="consentAccepted"
+              type="checkbox"
+              class="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-primary focus:ring-primary"
+            />
+            <label for="consent" class="text-xs leading-relaxed text-gray-600">
+              Я даю
+              <button
+                type="button"
+                class="text-primary hover:underline"
+                @click="showPrivacyPolicy = true"
+              >согласие на обработку персональных данных</button>
+            </label>
+          </div>
+
+          <BaseButton type="submit" :loading="loading" :disabled="!consentAccepted" class="w-full">
             {{ activeTab === 'login' ? 'Войти' : 'Зарегистрироваться' }}
           </BaseButton>
         </form>
@@ -275,6 +297,59 @@ async function handleSubmit() {
         </div>
       </div>
     </div>
+
+    <!-- Privacy policy modal -->
+    <BaseModal v-if="showPrivacyPolicy" title="Согласие на обработку персональных данных" @close="showPrivacyPolicy = false">
+      <div class="max-h-[60vh] overflow-y-auto space-y-3 text-sm text-gray-700">
+        <p>
+          Настоящим я, субъект персональных данных, в соответствии с Федеральным законом
+          от 27.07.2006 № 152-ФЗ «О персональных данных», свободно, своей волей и в своём
+          интересе даю согласие оператору сервиса <strong>LetterCatcher</strong> на обработку
+          моих персональных данных на следующих условиях:
+        </p>
+
+        <h4 class="font-semibold text-gray-900">1. Перечень персональных данных</h4>
+        <ul class="list-disc pl-5 space-y-1">
+          <li>Адрес электронной почты (email)</li>
+          <li>Хешированный пароль учётной записи</li>
+          <li>Идентификатор Telegram (при привязке аккаунта)</li>
+          <li>Содержимое входящей электронной корреспонденции, обрабатываемой сервисом</li>
+        </ul>
+
+        <h4 class="font-semibold text-gray-900">2. Цели обработки</h4>
+        <ul class="list-disc pl-5 space-y-1">
+          <li>Регистрация и аутентификация пользователя в сервисе</li>
+          <li>Приём, хранение и отображение входящей электронной почты</li>
+          <li>Доставка уведомлений о новых письмах через Telegram</li>
+          <li>Обеспечение безопасности учётной записи (восстановление пароля, подтверждение email)</li>
+        </ul>
+
+        <h4 class="font-semibold text-gray-900">3. Способы обработки</h4>
+        <p>
+          Сбор, запись, систематизация, накопление, хранение, уточнение (обновление, изменение),
+          извлечение, использование, передача (предоставление, доступ), блокирование, удаление,
+          уничтожение — с использованием средств автоматизации и без таковых.
+        </p>
+
+        <h4 class="font-semibold text-gray-900">4. Срок обработки</h4>
+        <p>
+          Персональные данные обрабатываются до момента удаления учётной записи пользователем
+          либо до отзыва настоящего согласия. После отзыва согласия данные удаляются
+          в течение 30 (тридцати) календарных дней, за исключением случаев, предусмотренных
+          законодательством Российской Федерации.
+        </p>
+
+        <h4 class="font-semibold text-gray-900">5. Права субъекта</h4>
+        <p>
+          Вы вправе в любое время отозвать настоящее согласие, направив запрос оператору,
+          а также требовать уточнения, блокирования или уничтожения персональных данных
+          в соответствии со ст. 14 Федерального закона № 152-ФЗ.
+        </p>
+      </div>
+      <BaseButton class="mt-4 w-full" @click="showPrivacyPolicy = false">
+        Закрыть
+      </BaseButton>
+    </BaseModal>
 
     <!-- Telegram guide modal -->
     <BaseModal v-if="showTelegramGuide" title="Как войти через Telegram" @close="showTelegramGuide = false">

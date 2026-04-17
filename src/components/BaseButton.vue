@@ -1,6 +1,7 @@
 <script setup>
 defineProps({
   loading: { type: Boolean, default: false },
+  disabled: { type: Boolean, default: false },
   variant: { type: String, default: 'primary' },
   type: { type: String, default: 'button' },
 })
@@ -9,7 +10,7 @@ defineProps({
 <template>
   <button
     :type="type"
-    :disabled="loading"
+    :disabled="loading || disabled"
     class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors disabled:opacity-50"
     :class="{
       'bg-primary text-white hover:bg-blue-600': variant === 'primary',
