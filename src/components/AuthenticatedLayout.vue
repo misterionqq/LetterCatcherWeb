@@ -46,11 +46,14 @@ async function handleResend() {
   }
 }
 
+const debugError = ref('')
+
 onMounted(async () => {
   try {
     await profileStore.fetchProfile()
   } catch (e) {
-    if (e.response?.status !== 401) {
+    debugError.value = `[DEBUG] fetchProfile failed: ${e.code || 'NO_CODE'} | ${e.message} | status=${e.response?.status} | url=${e.config?.url}`
+    if (e.response?.status === 401) {
       authStore.logout()
     }
     return
@@ -70,6 +73,10 @@ onUnmounted(() => {
 
 <template>
   <div class="min-h-screen bg-gray-50 pb-16">
+    <!-- Debug banner -->
+    <div v-if="debugError" class="bg-red-100 border-b border-red-300 px-4 py-3 text-xs text-red-900 break-all">
+      {{ debugError }}
+    </div>
     <!-- Email not verified banner -->
     <div
       v-if="profileStore.profile && profileStore.profile.email_verified === false"

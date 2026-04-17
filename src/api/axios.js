@@ -18,10 +18,6 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('access_token')
-      window.location.replace('/login')
-    }
     if (error.response?.status === 429) {
       error.rateLimited = true
     }
