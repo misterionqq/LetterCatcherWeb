@@ -300,7 +300,7 @@ async function handleSubmit() {
 
     <!-- Privacy policy modal -->
     <BaseModal v-if="showPrivacyPolicy" title="Согласие на обработку персональных данных" @close="showPrivacyPolicy = false">
-      <div class="max-h-[60vh] overflow-y-auto space-y-3 text-sm text-gray-700">
+      <div class="max-h-[60vh] overflow-y-auto pr-3 space-y-3 text-sm text-gray-700">
         <p>
           Настоящим я, субъект персональных данных, в соответствии с Федеральным законом
           от 27.07.2006 № 152-ФЗ «О персональных данных», свободно, своей волей и в своём
