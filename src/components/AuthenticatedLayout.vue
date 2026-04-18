@@ -99,7 +99,9 @@ onUnmounted(() => {
         </button>
       </div>
     </div>
-    <router-view />
+    <div class="mx-auto max-w-2xl">
+      <router-view />
+    </div>
     <BottomNav />
     <ToastContainer />
   </div>
