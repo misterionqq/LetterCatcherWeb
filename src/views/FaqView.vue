@@ -386,7 +386,7 @@ onMounted(async () => {
   <div class="min-h-screen bg-gray-50" :class="isAuthenticated ? 'pb-16' : 'pb-8'">
     <!-- Header -->
     <div class="sticky top-0 z-30 border-b border-gray-200 bg-white">
-      <div class="mx-auto flex max-w-2xl items-center gap-3 px-4 py-3">
+      <div class="mx-auto flex max-w-3xl items-center gap-3 px-4 py-3">
         <button
           class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100"
           @click="goBack"
@@ -399,7 +399,7 @@ onMounted(async () => {
       </div>
     </div>
 
-    <div class="mx-auto max-w-2xl px-4 py-4">
+    <div class="mx-auto max-w-3xl px-4 py-4">
       <!-- Search -->
       <div class="relative mb-6">
         <svg

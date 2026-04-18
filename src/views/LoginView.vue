@@ -249,8 +249,8 @@ async function handleSubmit() {
 
           <p v-if="errors.general" class="text-sm text-danger">{{ errors.general }}</p>
 
-          <!-- Privacy consent checkbox -->
-          <div class="flex items-start gap-2">
+          <!-- Privacy consent checkbox (registration only) -->
+          <div v-if="activeTab === 'register'" class="flex items-start gap-2">
             <input
               id="consent"
               v-model="consentAccepted"
@@ -267,7 +267,7 @@ async function handleSubmit() {
             </label>
           </div>
 
-          <BaseButton type="submit" :loading="loading" :disabled="!consentAccepted" class="w-full">
+          <BaseButton type="submit" :loading="loading" :disabled="activeTab === 'register' && !consentAccepted" class="w-full">
             {{ activeTab === 'login' ? 'Войти' : 'Зарегистрироваться' }}
           </BaseButton>
         </form>

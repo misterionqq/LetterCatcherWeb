@@ -99,7 +99,7 @@ onUnmounted(() => {
         </button>
       </div>
     </div>
-    <div class="mx-auto max-w-2xl">
+    <div class="mx-auto max-w-3xl">
       <router-view />
     </div>
     <BottomNav />
