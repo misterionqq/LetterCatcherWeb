@@ -49,6 +49,7 @@ async function handleResend() {
 const debugError = ref('')
 
 onMounted(async () => {
+  profileStore.fetchServerInfo()
   try {
     await profileStore.fetchProfile()
   } catch (e) {

@@ -3,7 +3,6 @@ import { ref, computed, onMounted } from 'vue'
 import { useProfileStore } from '@/stores/profile.js'
 import { useAuthStore } from '@/stores/auth.js'
 import { useToast } from '@/composables/useToast.js'
-import { getServerInfo } from '@/api/settings.js'
 import BaseButton from '@/components/BaseButton.vue'
 import BaseModal from '@/components/BaseModal.vue'
 import KeywordChip from '@/components/KeywordChip.vue'
@@ -36,11 +35,7 @@ const pendingNotifications = ref([])
 
 // Telegram
 const telegramLinkLoading = ref(false)
-const botUsername = ref('')
 const showTelegramHint = ref(false)
-
-// Forwarding email
-const forwardingEmail = ref('')
 
 // Sensitivity
 const sensitivityLoading = ref(false)
@@ -63,12 +58,9 @@ onMounted(() => {
   if (!profileStore.profile && !profileStore.loading) {
     profileStore.fetchProfile().catch(() => {})
   }
-  getServerInfo()
-    .then((info) => {
-      if (info.bot_username) botUsername.value = info.bot_username
-      if (info.forwarding_email) forwardingEmail.value = info.forwarding_email
-    })
-    .catch(() => {})
+  if (!profileStore.botUsername && !profileStore.forwardingEmail) {
+    profileStore.fetchServerInfo()
+  }
 })
 
 async function handleResendVerification() {
@@ -211,7 +203,7 @@ async function handleAddStopWord() {
 
 async function copyForwardingEmail() {
   try {
-    await navigator.clipboard.writeText(forwardingEmail.value)
+    await navigator.clipboard.writeText(profileStore.forwardingEmail)
     addToast('Скопировано', 'success')
   } catch {
     addToast('Не удалось скопировать', 'error')
@@ -268,11 +260,11 @@ async function handleRemoveKeyword(word) {
       </section>
 
       <!-- Forwarding Email -->
-      <section v-if="forwardingEmail" class="rounded-xl bg-white p-4 shadow-sm">
+      <section v-if="profileStore.forwardingEmail" class="rounded-xl bg-white p-4 shadow-sm">
         <h2 class="mb-3 text-sm font-semibold text-gray-500 uppercase tracking-wide">Адрес для пересылки</h2>
         <p class="mb-2 text-xs text-gray-500">Настройте пересылку входящих писем на этот адрес</p>
         <div class="flex items-center gap-2 rounded-lg bg-gray-100 px-4 py-3">
-          <code class="flex-1 break-all text-sm font-medium text-gray-900">{{ forwardingEmail }}</code>
+          <code class="flex-1 break-all text-sm font-medium text-gray-900">{{ profileStore.forwardingEmail }}</code>
           <button
             class="shrink-0 rounded-md p-1.5 text-gray-500 transition-colors hover:bg-gray-200 hover:text-gray-700"
             title="Скопировать"

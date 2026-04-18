@@ -2,11 +2,15 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import * as profileApi from '@/api/profile.js'
 import * as keywordsApi from '@/api/keywords.js'
+import { getServerInfo } from '@/api/settings.js'
 
 export const useProfileStore = defineStore('profile', () => {
   const profile = ref(null)
   const loading = ref(false)
   const error = ref(null)
+
+  const forwardingEmail = ref('')
+  const botUsername = ref('')
 
   async function fetchProfile() {
     loading.value = true
@@ -54,6 +58,16 @@ export const useProfileStore = defineStore('profile', () => {
     return await profileApi.linkTelegram()
   }
 
+  async function fetchServerInfo() {
+    try {
+      const info = await getServerInfo()
+      if (info.forwarding_email) forwardingEmail.value = info.forwarding_email
+      if (info.bot_username) botUsername.value = info.bot_username
+    } catch {
+      // Server info unavailable
+    }
+  }
+
   return {
     profile,
     loading,
@@ -67,5 +81,8 @@ export const useProfileStore = defineStore('profile', () => {
     addStopWord,
     removeKeyword,
     linkTelegram,
+    forwardingEmail,
+    botUsername,
+    fetchServerInfo,
   }
 })
