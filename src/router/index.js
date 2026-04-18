@@ -32,6 +32,12 @@ const routes = [
     meta: { requiresAuth: false },
   },
   {
+    path: '/faq',
+    name: 'Faq',
+    component: () => import('@/views/FaqView.vue'),
+    meta: { requiresAuth: false },
+  },
+  {
     path: '/',
     component: () => import('@/components/AuthenticatedLayout.vue'),
     meta: { requiresAuth: true },

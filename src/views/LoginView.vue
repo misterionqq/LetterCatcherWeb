@@ -296,6 +296,13 @@ async function handleSubmit() {
           </button>
         </div>
       </div>
+
+      <!-- FAQ link -->
+      <div class="mt-4 text-center">
+        <router-link to="/faq" class="text-sm text-gray-400 hover:text-gray-600 hover:underline">
+          Частые вопросы (FAQ)
+        </router-link>
+      </div>
     </div>
 
     <!-- Privacy policy modal -->
