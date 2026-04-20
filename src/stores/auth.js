@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import * as authApi from '@/api/auth.js'
+import { usePushNotifications } from '@/composables/usePushNotifications.js'
 import router from '@/router'
 
 export const useAuthStore = defineStore('auth', () => {
@@ -44,7 +45,9 @@ export const useAuthStore = defineStore('auth', () => {
     return await authApi.resendVerification()
   }
 
-  function logout() {
+  async function logout() {
+    const { unregister } = usePushNotifications()
+    await unregister()
     token.value = null
     justRegistered.value = false
     registeredEmail.value = ''
