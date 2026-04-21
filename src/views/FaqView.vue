@@ -219,15 +219,15 @@ const sections = [
         a: `LetterCatcher использует нейросеть для анализа писем. Уровень чувствительности определяет, когда она подключается:
         <div class="mt-3 space-y-3">
           <div class="rounded-lg border border-gray-200 p-3">
-            <p class="font-medium text-gray-900">Только суперважные <span class="text-xs text-gray-400">(low)</span></p>
+            <p class="font-medium text-gray-900">Без ИИ <span class="text-xs text-gray-400">(low)</span></p>
             <p class="mt-1 text-sm text-gray-600">Нейросеть не используется. Уведомления приходят только при срабатывании ваших ключевых слов. Минимум уведомлений — максимум тишины.</p>
           </div>
           <div class="rounded-lg border border-blue-200 bg-blue-50/50 p-3">
-            <p class="font-medium text-gray-900">Сбалансированный <span class="text-xs text-gray-400">(medium) — по умолчанию</span></p>
+            <p class="font-medium text-gray-900">По ключевым словам <span class="text-xs text-gray-400">(medium) — по умолчанию</span></p>
             <p class="mt-1 text-sm text-gray-600">Нейросеть подключается, только если сработало ключевое слово. Она оценивает, действительно ли письмо важное, и отсеивает ложные срабатывания.</p>
           </div>
           <div class="rounded-lg border border-gray-200 p-3">
-            <p class="font-medium text-gray-900">Все подряд <span class="text-xs text-gray-400">(high)</span></p>
+            <p class="font-medium text-gray-900">ИИ для всего <span class="text-xs text-gray-400">(high)</span></p>
             <p class="mt-1 text-sm text-gray-600">Нейросеть анализирует каждое входящее письмо, даже если ключевые слова не сработали. Больше уведомлений, но ничего не пропустите.</p>
           </div>
         </div>

@@ -49,9 +49,9 @@ const stopWords = computed(() =>
 )
 
 const sensitivityLabels = {
-  low: 'Только суперважные',
-  medium: 'Сбалансированный',
-  high: 'Все подряд',
+  low: 'Без ИИ',
+  medium: 'По ключевым словам',
+  high: 'ИИ для всего',
 }
 
 onMounted(() => {
