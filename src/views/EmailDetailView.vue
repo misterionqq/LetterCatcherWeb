@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useNotificationsStore } from '@/stores/notifications.js'
 import DOMPurify from 'dompurify'
+import { formatDate } from '@/utils/dateUtils.js'
 
 const route = useRoute()
 const router = useRouter()
@@ -21,17 +22,6 @@ const safeHtml = computed(() => {
 const hasHtml = computed(() => !!email.value?.body_html)
 const hasText = computed(() => !!email.value?.body_full)
 
-function formatDate(dateStr) {
-  if (!dateStr) return ''
-  const d = new Date(dateStr)
-  return d.toLocaleString('ru-RU', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
 
 function formatSize(bytes) {
   if (!bytes) return '0 B'
@@ -88,7 +78,7 @@ function fileIcon(contentType) {
       <!-- Metadata -->
       <div class="mb-4 space-y-1.5 rounded-xl bg-white p-4 shadow-sm text-sm">
         <p><span class="text-gray-400">От: </span><span class="text-gray-700">{{ email.sender }}</span></p>
-        <p><span class="text-gray-400">Дата: </span><span class="text-gray-700">{{ formatDate(email.date || email.processed_at) }}</span></p>
+        <p><span class="text-gray-400">Дата: </span><span class="text-gray-700">{{ formatDate(email.date || email.processed_at, true) }}</span></p>
         <p v-if="email.ai_reason"><span class="text-gray-400">AI: </span><span class="italic text-primary">{{ email.ai_reason }}</span></p>
         <p v-if="email.triggered_word">
           <span class="text-gray-400">Триггер: </span>

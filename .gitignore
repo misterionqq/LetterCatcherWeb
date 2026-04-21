@@ -36,3 +36,13 @@ android
 
 .claude
 FRONTEND.md
+
+# Test coverage reports
+coverage
+
+# Local resources / screenshots
+resources
+*.png
+*.jpg
+*.jpeg
+FAQ.txt

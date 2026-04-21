@@ -1,20 +1,11 @@
 <script setup>
+import { formatDate } from '@/utils/dateUtils.js'
+
 defineProps({
   email: { type: Object, required: true },
 })
 
 const emit = defineEmits(['click'])
-
-function formatDate(dateStr) {
-  if (!dateStr) return ''
-  const d = new Date(dateStr)
-  return d.toLocaleString('ru-RU', {
-    day: 'numeric',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
 </script>
 
 <template>
