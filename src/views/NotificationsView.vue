@@ -12,6 +12,12 @@ const store = useNotificationsStore()
 
 const health = ref(null)
 const tab = ref('important')
+const refreshing = ref(false)
+
+// Pull-to-refresh state
+const pullStartY = ref(0)
+const pullDistance = ref(0)
+const PULL_THRESHOLD = 70
 
 // Merge WS emails + history meta, deduplicate by email_uid, sort newest first
 const allEmails = computed(() => {
@@ -44,6 +50,40 @@ function openEmail(email) {
   router.push(`/emails/${email.email_uid}`)
 }
 
+async function refresh() {
+  if (refreshing.value) return
+  refreshing.value = true
+  try {
+    await store.fetchHistory(50)
+    getHealth().then((data) => (health.value = data)).catch(() => {})
+  } finally {
+    refreshing.value = false
+  }
+}
+
+// Pull-to-refresh handlers
+function onTouchStart(e) {
+  if (window.scrollY === 0) {
+    pullStartY.value = e.touches[0].clientY
+  }
+}
+
+function onTouchMove(e) {
+  if (!pullStartY.value) return
+  const dy = e.touches[0].clientY - pullStartY.value
+  if (dy > 0 && window.scrollY === 0) {
+    pullDistance.value = Math.min(dy, PULL_THRESHOLD + 30)
+  }
+}
+
+function onTouchEnd() {
+  if (pullDistance.value >= PULL_THRESHOLD) {
+    refresh()
+  }
+  pullDistance.value = 0
+  pullStartY.value = 0
+}
+
 onMounted(() => {
   getHealth().then((data) => (health.value = data)).catch(() => {})
   store.fetchHistory(50)
@@ -51,9 +91,44 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="px-4 py-4">
-    <!-- Health indicator -->
-    <HealthIndicator :status="health" class="mb-3" />
+  <div
+    class="px-4 py-4"
+    @touchstart.passive="onTouchStart"
+    @touchmove.passive="onTouchMove"
+    @touchend.passive="onTouchEnd"
+  >
+    <!-- Pull-to-refresh indicator -->
+    <div
+      class="flex items-center justify-center overflow-hidden transition-all duration-150"
+      :style="{ height: pullDistance > 0 ? pullDistance + 'px' : '0px' }"
+    >
+      <svg
+        class="h-6 w-6 text-primary transition-transform duration-200"
+        :class="{ 'animate-spin': refreshing, 'rotate-180': pullDistance >= PULL_THRESHOLD && !refreshing }"
+        fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"
+      >
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+      </svg>
+    </div>
+
+    <!-- Header with refresh button -->
+    <div class="mb-3 flex items-center justify-between">
+      <HealthIndicator :status="health" class="flex-1" />
+      <button
+        class="ml-2 p-1.5 text-gray-400 active:text-primary disabled:opacity-40"
+        :disabled="refreshing || store.loading"
+        @click="refresh"
+        title="Обновить"
+      >
+        <svg
+          class="h-5 w-5"
+          :class="{ 'animate-spin': refreshing || store.loading }"
+          fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+      </button>
+    </div>
 
     <!-- Tabs -->
     <div class="mb-4 flex rounded-lg bg-gray-100 p-1">
