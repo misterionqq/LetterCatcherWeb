@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useNotificationsStore } from '@/stores/notifications.js'
 import { getHealth } from '@/api/health.js'
 import HealthIndicator from '@/components/HealthIndicator.vue'
@@ -8,10 +8,11 @@ import EmailCard from '@/components/EmailCard.vue'
 import SkeletonLoader from '@/components/SkeletonLoader.vue'
 
 const router = useRouter()
+const route = useRoute()
 const store = useNotificationsStore()
 
 const health = ref(null)
-const tab = ref('important')
+const tab = ref(route.query.tab === 'all' ? 'all' : 'important')
 const refreshing = ref(false)
 
 // Pull-to-refresh state
@@ -45,6 +46,11 @@ const filteredEmails = computed(() => {
   }
   return allEmails.value
 })
+
+function setTab(value) {
+  tab.value = value
+  router.replace({ query: value === 'important' ? {} : { tab: value } })
+}
 
 function openEmail(email) {
   router.push(`/emails/${email.email_uid}`)
@@ -135,14 +141,14 @@ onMounted(() => {
       <button
         class="flex-1 rounded-md py-2 text-sm font-medium transition-colors"
         :class="tab === 'important' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'"
-        @click="tab = 'important'"
+        @click="setTab('important')"
       >
         Важные
       </button>
       <button
         class="flex-1 rounded-md py-2 text-sm font-medium transition-colors"
         :class="tab === 'all' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'"
-        @click="tab = 'all'"
+        @click="setTab('all')"
       >
         Все
       </button>
